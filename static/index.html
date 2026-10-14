@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG Document AI Assistant - Chat Interaktif Realtime</title>
+  <meta name="description" content="Tanya jawab interaktif dan realtime berbasis dokumen PDF menggunakan Retrieval-Augmented Generation (RAG) dan Gemini AI.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Markdown-it for rich markdown & syntax formatting -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+  
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-layout">  
+    <!-- Sidebar Overlay (Mobile) -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon">
+            <i data-lucide="cpu"></i>
+          </div>
+          <div class="brand-text">
+            <h2>RAG System</h2>
+            <span id="headerModelBadge" class="badge-version">v1.0 • Gemini AI</span>
+          </div>
+        </div>
+        <button id="closeSidebarBtn" class="btn-icon mobile-only" title="Tutup menu">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="sidebar-action">
+        <button id="newChatBtn" class="btn-new-chat">
+          <i data-lucide="plus"></i>
+          <span>Percakapan Baru</span>
+        </button>
+      </div>
+
+      <div class="sidebar-scrollable">
+        <!-- Riwayat Percakapan -->
+        <div class="sidebar-section">
+          <div class="section-title">
+            <span class="title-with-icon">
+              <i data-lucide="message-square"></i>
+              Riwayat Chat
+            </span>
+            <span id="sessionCountBadge" class="counter-badge">0</span>
+          </div>
+          <div id="sessionList" class="session-list">
+            <!-- Diisi secara dinamis oleh JavaScript -->
+          </div>
+        </div>
+
+        <!-- Dokumen Terindeks -->
+        <div class="sidebar-section">
+          <div class="section-title">
+            <span class="title-with-icon">
+              <i data-lucide="folder"></i>
+              Dokumen Terindeks
+            </span>
+            <span id="docCountBadge" class="counter-badge">0</span>
+          </div>
+          <div id="documentList" class="document-list">
+            <div class="doc-item skeleton-loading">
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+            </div>
+          </div>
+          <button id="reindexBtn" class="btn-secondary reindex-btn" title="Muat ulang dan indeks ulang file PDF">
+            <i data-lucide="refresh-cw"></i>
+            <span>Indeks Ulang PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <button id="clearChatBtn" class="btn-subtle" title="Hapus seluruh riwayat obrolan">
+          <i data-lucide="trash-2"></i>
+          <span>Bersihkan Chat</span>
+        </button>
+        <button id="exportChatBtn" class="btn-subtle" title="Simpan percakapan sebagai file teks">
+          <i data-lucide="download"></i>
+          <span>Ekspor Chat</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="chat-main">
+      <!-- Top Bar -->
+      <header class="chat-header">
+        <div class="header-left">
+          <button id="openSidebarBtn" class="btn-icon mobile-only" title="Buka menu navigasi">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="header-title">
+            <h1>Tanya Dokumen Pintar</h1>
+            <div class="status-indicator">
+              <span class="status-dot"></span>
+              <span id="systemStatusText">Sistem RAG</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <button id="scrollBottomBtn" class="btn-icon scroll-btn hidden" title="Gulir ke bawah">
+            <i data-lucide="chevron-down"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Chat Messages Container -->
+      <div id="chatMessages" class="chat-messages">
+        <!-- Hero Welcome Screen (Shown initially) -->
+        <div id="welcomeHero" class="welcome-hero">
+          <div class="hero-glow"></div>
+          <div class="hero-icon-container">
+            <i data-lucide="message-square" class="hero-icon"></i>
+          </div>
+          <h2 class="hero-title">Ada yang bisa saya bantu terkait dokumen Anda?</h2>
+          <p class="hero-description">
+            Ajukan pertanyaan apa saja terkait dokumen regulasi dan pengumuman yang sudah diindeks.
+            Sistem kami akan mencari bagian yang paling relevan dan menjawab secara realtime dengan bukti referensi.
+          </p>
+
+          <div class="suggestions-container">
+            <div class="suggestions-header">
+              <i data-lucide="compass"></i>
+              <span>Coba tanyakan pertanyaan berikut:</span>
+            </div>
+            <div class="suggestions-grid">
+              <button class="suggestion-chip" data-prompt="Apa saja persyaratan dalam seleksi pendidikan SBP?">
+                <span class="chip-icon"><i data-lucide="clipboard-list"></i></span>
+                <span class="chip-text">Apa saja persyaratan dalam seleksi pendidikan SBP?</span>
+              </button>
+              <button class="suggestion-chip" data-prompt="Bagaimana alur penyusunan Kontrak Kerja menurut Perpol Nomor 1 Tahun 2025?">
+                <span class="chip-icon"><i data-lucide="file-text"></i></span>
+                <span class="chip-text">Bagaimana alur penyusunan Kontrak Kerja di Perpol 1/2025?</span>
+              </button>
+              <button class="suggestion-chip" data-prompt="Berapa standar nilai dasar Litcatpers selama berdinas?">
+                <span class="chip-icon"><i data-lucide="scale"></i></span>
+                <span class="chip-text">Berapa standar nilai dasar Litcatpers selama berdinas?</span>
+              </button>
+              <button class="suggestion-chip" data-prompt="Apa sanksi jika tidak melaksanakan penilaian kinerja?">
+                <span class="chip-icon"><i data-lucide="shield-alert"></i></span>
+                <span class="chip-text">Apa sanksi jika tidak melaksanakan penilaian kinerja?</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Messages Rendered Here -->
+      </div>
+
+      <!-- Input Bar Section -->
+      <footer class="chat-input-wrapper">
+        <div class="chat-input-container">
+          <!-- Live Thinking Banner (Shows during RAG search) -->
+          <div id="searchIndicator" class="search-indicator hidden">
+            <div class="typing-indicator-dot"></div>
+            <span id="searchIndicatorText">Mencari bagian relevan di dalam dokumen PDF...</span>
+          </div>
+
+          <form id="chatForm" class="chat-form">
+            <textarea
+              id="messageInput"
+              class="message-textarea"
+              placeholder="Ketik pertanyaan seputar isi dokumen..."
+              rows="1"
+              autofocus
+            ></textarea>
+            
+            <div class="input-actions">
+              <button
+                type="button"
+                id="stopGenerationBtn"
+                class="btn-stop hidden"
+                title="Hentikan pembuatan jawaban"
+              >
+                <i data-lucide="square"></i>
+                <span>Stop</span>
+              </button>
+              
+              <button
+                type="submit"
+                id="sendBtn"
+                class="btn-send"
+                title="Kirim pertanyaan (Enter)"
+                disabled
+              >
+                <i data-lucide="arrow-up"></i>
+              </button>
+            </div>
+          </form>
+
+          <div class="input-footer-hint">
+            <span>Tekan <strong>Enter</strong> untuk mengirim • <strong>Shift + Enter</strong> untuk baris baru</span>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Modal Pratinjau Dokumen -->
+  <div id="docModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">Detail Sumber Referensi</h3>
+        <button id="modalCloseBtn" class="btn-icon">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="modalMeta" class="modal-meta"></div>
+        <div id="modalContent" class="modal-content-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
