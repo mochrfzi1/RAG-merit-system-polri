@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # RAG Document AI Assistant
 
 Sistem tanya-jawab dokumen PDF berbasis *Retrieval-Augmented Generation (RAG)* menggunakan *Gemini AI* + *Sentence Transformers*. Mendukung streaming realtime, deteksi bagan/struktur organisasi via Vision AI, dan antarmuka chat modern.
@@ -125,3 +126,6 @@ RAG/
 | scikit-learn | Cosine similarity search |
 | pillow | Pemrosesan gambar |
 | python-dotenv | Baca file .env |
+=======
+# RAG-merit-system-polri
+>>>>>>> 647aa712403f0519ca3ea00a0e0106a66172f0cf
